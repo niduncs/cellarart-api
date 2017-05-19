@@ -3,7 +3,11 @@ var Schema = mongoose.Schema;
 
 var EventSchema = new Schema({
     name: String,
-    date: Date,
+    date: {
+        startDate: Date,
+        endDate: Date,
+
+    },
     location: String,
     url: String,
     type: String
