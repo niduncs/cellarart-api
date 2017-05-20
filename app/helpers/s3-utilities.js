@@ -1,12 +1,12 @@
 const AWS = require('aws-sdk');
 
-function S3Utilities(bucketName, awsKey, awsSecretKey) {
+function S3Utilities(params) {
     this.s3 = new AWS.S3({
-        accessKeyId: awsKey,
-        secretAccessKey: awsSecretKey,
+        accessKeyId: params.key,
+        secretAccessKey: params.secretKey,
         signatureVersion: 'v4'
     });
-    this.bucketName = bucketName;
+    this.bucketName = params.bucketName;
 }
 
 S3Utilities.prototype.getObjects = function(callback) {
@@ -33,7 +33,34 @@ S3Utilities.prototype.createObject = function (data, callback) {
 };
 
 S3Utilities.prototype.deleteObject = function (key, callback) {
+    var params = {
+        Bucket: this.bucketName,
+        Key: key
+    };
+    
+    this.s3.deleteObject(params, function (err) {
+        callback(!err);
+    });
+};
 
+S3Utilities.prototype.deleteObjects = function (keys, callback) {
+    var objects = [];
+
+    keys.forEach(function (key, i) {
+        objects[i] = { Key: key };
+    });
+
+    var params = {
+        Bucket: this.bucketName,
+        Delete: {
+            Objects: deleteMe
+        }
+    };
+
+    this.s3.deleteObjects(params, function (err) {
+        if (err) console.log(err);
+        callback(!err);
+    });
 };
 
 module.exports = S3Utilities;

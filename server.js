@@ -3,8 +3,8 @@ require('dotenv').config();
 
 // external libraries
 const express = require('express');
-var app = express();
 const bodyParser = require('body-parser');
+var app = express();
 
 // db connections and stuff
 const connectionString = process.env.MONGODB_URI;
@@ -16,12 +16,14 @@ mongoose.connect(connectionString);
 var Event = require('./app/models/event');
 
 // s3 shit
-const bucketName = process.env.AWS_BUCKET_NAME;
-const awsKey = process.env.AWS_KEY;
-const awsSecretKey = process.env.AWS_SECRET_KEY;
-const awsS3Url = process.env.AWS_S3_URL;
-var S3Utilities = require('./app/helpers/s3-utilities');
-var s3 = new S3Utilities(bucketName, awsKey, awsSecretKey);
+const awsParams = {
+    bucketName: process.env.AWS_BUCKET_NAME,
+    key: process.env.AWS_KEY,
+    secretKey: process.env.AWS_SECRET_KEY,
+    s3Url: process.env.AWS_S3_URL
+};
+const S3Utilities = require('./app/helpers/s3-utilities');
+const s3 = new S3Utilities(awsParams);
 
 // little bit of setup
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -98,7 +100,7 @@ router.route('/images')
 
             if (data.length > 0) {
                 data.forEach(function (element) {
-                    arr.push(awsS3Url + encodeURIComponent(element));
+                    arr.push(awsParams.s3Url + encodeURIComponent(element));
                 });
             }
 
@@ -106,7 +108,15 @@ router.route('/images')
         });
     })
     .delete(function (req, res) {
-
+        if (req.body.keys && req.body.keys.length > 1) {
+            s3.deleteObjects(req.body.keys, function (success) {
+                res.send(success);
+            });
+        } else {
+            s3.deleteObject(req.body.keys[0], function (success) {
+                res.send(success);
+            });
+        }
     })
     .post(function (req, res) {
 
