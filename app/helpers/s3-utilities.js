@@ -37,7 +37,7 @@ S3Utilities.prototype.deleteObject = function (key, callback) {
         Bucket: this.bucketName,
         Key: key
     };
-    
+
     this.s3.deleteObject(params, function (err) {
         callback(!err);
     });

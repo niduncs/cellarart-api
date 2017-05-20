@@ -12,8 +12,8 @@ var mongoose = require('mongoose');
 mongoose.Promise = require('bluebird');
 mongoose.connect(connectionString);
 
-// data models
-var Event = require('./app/models/event');
+// controllers
+var eventController = require('./app/controllers/events-controller');
 
 // s3 shit
 const awsParams = {
@@ -40,56 +40,12 @@ router.use(function (req, res, next) {
 // the routing begins
 // event stuff
 router.route('/events')
-    .get(function (req, res) {
-        Event.find(function (err, events) {
-            if (err)
-                res.json({ success: false, message: err.message});
-
-            if (events.length > 0)
-                res.json(events);
-
-            res.json({ success: true, message: 'No events to return!'});
-        });
-    })
-    .post(function (req, res) {
-        console.log(req.body);
-
-        var event = new Event({
-            name: req.body.name,
-            location: req.body.location,
-            date: {
-                startDate: req.body.date.startDate,
-                endDate: req.body.date.endDate
-            },
-            url: req.body.url,
-            type: req.body.type
-        });
-
-        event.save(function (err) {
-            if (err)
-                return res.json({ success: false, message: err.message});
-
-            res.json({ success: !err, event: event });
-        });
-    });
+    .get(eventController.findEvents)
+    .post(eventController.addEvent);
 
 router.route('/events/:event_id')
-    .get(function (req, res) {
-        Event.findById(req.params.event_id, function (err, event) {
-            if (err)
-                return res.json({ 'success': false, 'message': err.message});
-
-            res.json({ success: !err, event: event});
-        })
-    })
-    .delete(function (req, res) {
-        Event.findByIdAndRemove(req.params.event_id, function (err, event) {
-            if (err)
-                return res.json({ success: false, message: err.message});
-
-            res.json({ success: !err });
-        });
-    });
+    .get(eventController.findEventById)
+    .delete(eventController.deleteEvent);
 
 router.route('/images')
     .get(function (req, res) {
