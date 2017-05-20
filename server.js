@@ -1,10 +1,13 @@
+// read .env variables for dev
+require('dotenv').config();
+
 // external libraries
 const express = require('express');
 var app = express();
 const bodyParser = require('body-parser');
 
 // db connections and stuff
-const connectionString = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/niall';
+const connectionString = process.env.MONGODB_URI;
 var mongoose = require('mongoose');
 mongoose.Promise = require('bluebird');
 mongoose.connect(connectionString);
@@ -12,13 +15,20 @@ mongoose.connect(connectionString);
 // data models
 var Event = require('./app/models/event');
 
+// s3 shit
+const bucketName = process.env.AWS_BUCKET_NAME;
+const awsKey = process.env.AWS_KEY;
+const awsSecretKey = process.env.AWS_SECRET_KEY;
+const awsS3Url = process.env.AWS_S3_URL;
+var S3Utilities = require('./app/helpers/s3-utilities');
+var s3 = new S3Utilities(bucketName, awsKey, awsSecretKey);
+
 // little bit of setup
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 const port = process.env.PORT || 8080;
 var router = express.Router();
-
 
 // routing middleware
 router.use(function (req, res, next) {
@@ -81,7 +91,19 @@ router.route('/events/:event_id')
 
 router.route('/images')
     .get(function (req, res) {
-        
+        s3.getObjects(function (err, data) {
+            if (err) res.send(err);
+
+            var arr = [];
+
+            if (data.length > 0) {
+                data.forEach(function (element) {
+                    arr.push(awsS3Url + encodeURIComponent(element));
+                });
+            }
+
+            res.json(arr);
+        });
     })
     .delete(function (req, res) {
 
