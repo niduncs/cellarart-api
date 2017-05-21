@@ -11,6 +11,7 @@ db.connect(process.env.MONGODB_URI);
 
 // controllers
 var eventController = require('./app/controllers/events-controller');
+var imagesController = require('./app/controllers/images-controller');
 
 // s3 shit
 const awsParams = {
@@ -19,6 +20,9 @@ const awsParams = {
     secretKey: process.env.AWS_SECRET_KEY,
     s3Url: process.env.AWS_S3_URL
 };
+// we need to pass AWS stuff into the images controller
+imagesController.constructor(awsParams);
+
 const S3Utilities = require('./app/helpers/s3-utilities');
 const s3 = new S3Utilities(awsParams);
 
@@ -45,35 +49,9 @@ router.route('/events/:event_id')
     .delete(eventController.deleteEvent);
 
 router.route('/images')
-    .get(function (req, res) {
-        s3.getObjects(function (err, data) {
-            if (err) res.send(err);
-
-            var arr = [];
-
-            if (data.length > 0) {
-                data.forEach(function (element) {
-                    arr.push(awsParams.s3Url + encodeURIComponent(element));
-                });
-            }
-
-            res.json(arr);
-        });
-    })
-    .delete(function (req, res) {
-        if (req.body.keys && req.body.keys.length > 1) {
-            s3.deleteObjects(req.body.keys, function (success) {
-                res.send(success);
-            });
-        } else {
-            s3.deleteObject(req.body.keys[0], function (success) {
-                res.send(success);
-            });
-        }
-    })
-    .post(function (req, res) {
-
-    });
+    .get(imagesController.getImages)
+    .delete(imagesController.deleteImages)
+    .post(imagesController.addImage);
 
 // route everything through `/api` 'cause I'm cool
 app.use('/api', router);

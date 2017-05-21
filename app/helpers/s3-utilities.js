@@ -7,6 +7,7 @@ function S3Utilities(params) {
         signatureVersion: 'v4'
     });
     this.bucketName = params.bucketName;
+    this.s3Url = params.s3Url;
 }
 
 S3Utilities.prototype.getObjects = function(callback) {
