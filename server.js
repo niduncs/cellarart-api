@@ -6,11 +6,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 var app = express();
 
-// db connections and stuff
-const connectionString = process.env.MONGODB_URI;
-var mongoose = require('mongoose');
-mongoose.Promise = require('bluebird');
-mongoose.connect(connectionString);
+var db = require('./app/db');
+db.connect(process.env.MONGODB_URI);
 
 // controllers
 var eventController = require('./app/controllers/events-controller');
