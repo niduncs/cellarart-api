@@ -4,37 +4,35 @@ require('dotenv').config();
 // external libraries
 const express = require('express');
 const bodyParser = require('body-parser');
-var app = express();
 
+// app setup
+const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+// DB setup
 var db = require('./app/db');
 db.connect(process.env.MONGODB_URI);
 
 // controllers
-var eventController = require('./app/controllers/events-controller');
-var imagesController = require('./app/controllers/images-controller');
+const eventController = require('./app/controllers/events-controller');
+const imagesController = require('./app/controllers/images-controller');
 
-// s3 shit
-const awsParams = {
+// we need to pass AWS stuff into the images controller
+imagesController.constructor({
     bucketName: process.env.AWS_BUCKET_NAME,
     key: process.env.AWS_KEY,
     secretKey: process.env.AWS_SECRET_KEY,
     s3Url: process.env.AWS_S3_URL
-};
-// we need to pass AWS stuff into the images controller
-imagesController.constructor(awsParams);
+});
 
-const S3Utilities = require('./app/helpers/s3-utilities');
-const s3 = new S3Utilities(awsParams);
-
-// little bit of setup
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-
+// router setup
 const port = process.env.PORT || 8080;
 var router = express.Router();
 
 // routing middleware
 router.use(function (req, res, next) {
+    // probably add some authentication shit in here
     next();
 });
 
@@ -48,6 +46,7 @@ router.route('/events/:event_id')
     .get(eventController.findEventById)
     .delete(eventController.deleteEvent);
 
+// image stuff
 router.route('/images')
     .get(imagesController.getImages)
     .delete(imagesController.deleteImages)
