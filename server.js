@@ -45,14 +45,28 @@ app.use(formData.stream());
 // union body and files
 app.use(formData.union());
 
+// prevent the bad men from being bad
+app.disable('x-powered-by');
+
 // routing middleware
 router.use(function (req, res, next) {
-    if (req.path === '/authenticate' && !req.header('x-jwt-token')) {
-        next();
-    } else {
-        return res.send('Not a valid request.');
-    }
-    next();
+    if (!req.header('x-jwt-token')) {
+        if (req.path !== '/authenticate') {
+            res.status(403);
+            return res.send('Invalid Request: Missing auth token.');
+        } else {
+            next();
+        }
+    } 
+
+    authController.authenticateToken(req.header('x-jwt-token'), (verified) => {
+        if (verified) {
+            next();
+        } else {
+            res.status(403);
+            return res.send('Invalid Request: Invalid auth token');
+        }
+    });
 });
 
 router.route('/authenticate')

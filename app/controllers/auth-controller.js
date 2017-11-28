@@ -12,18 +12,32 @@ const controller = {
             return res.send('Name or password missing');
         }
     
-        User.findOne({ username: req.body.name, password: req.body.password }, '', function (err, user) {
-            if (user) {
-                jwt.sign(user._id, secretKey, { expiresIn: '10d' }, function(err, token) {
-                    if (!err) {
-                        return res.json({ token: token });
-                    }
+        // User.findOne({ username: req.body.name, password: req.body.password }, '', function (err, user) {
+        //     if (user) {
+        //         jwt.sign(user._id, secretKey, { expiresIn: '10d' }, function(err, token) {
+        //             if (!err) {
+        //                 return res.json({ token: token });
+        //             }
     
-                    return res.send('Error signing token.');
-                });
+        //             return res.send('Error signing token.');
+        //         });
+        //     }
+    
+        //     return err ? res.send(err) : res.send('Invalid user.');
+        // });
+
+        const user = {
+            name: req.body.name,
+            password: req.body.password
+        };
+
+        jwt.sign(user, secretKey, { expiresIn: '10d' }, function(err, token) {
+            console.log(err);
+            if (!err) {
+                return res.json({ token: token });
             }
-    
-            return err ? res.send(err) : res.send('Invalid user.');
+
+            return res.send('Error signing token.');
         });
     },
     authenticateToken: function(token, callback) {
