@@ -4,47 +4,75 @@ require('dotenv').config();
 // external libraries
 const express = require('express');
 const bodyParser = require('body-parser');
+const formData = require('express-form-data');
 
 // app setup
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
 
 // DB setup
 var db = require('./app/db');
 db.connect(process.env.MONGODB_URI);
 
-// controllers
-const eventController = require('./app/controllers/events-controller');
-const imagesController = require('./app/controllers/images-controller');
-
-// we need to pass AWS stuff into the images controller
-imagesController.constructor({
+const awsConfig = {
     bucketName: process.env.AWS_BUCKET_NAME,
     key: process.env.AWS_KEY,
     secretKey: process.env.AWS_SECRET_KEY,
     s3Url: process.env.AWS_S3_URL
-});
+};
+
+// controllers
+const eventController = require('./app/controllers/events-controller');
+const imagesController = require('./app/controllers/images-controller');
+const authController = require('./app/controllers/auth-controller');
+
+// we need to pass AWS stuff into the images controller
+imagesController.init(awsConfig);
+eventController.init(awsConfig);
+authController.init(process.env.SECRET_KEY);
 
 // router setup
 const port = process.env.PORT || 8080;
 var router = express.Router();
 
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+// parsing data with connect-multiparty.
+app.use(formData.parse());
+// clear all empty files (size == 0)
+app.use(formData.format());
+// change file objects to node stream.Readable
+app.use(formData.stream());
+// union body and files
+app.use(formData.union());
+
 // routing middleware
 router.use(function (req, res, next) {
-    // probably add some authentication shit in here
+    if (req.path === '/authenticate' && !req.header('x-jwt-token')) {
+        next();
+    } else {
+        return res.send('Not a valid request.');
+    }
     next();
 });
+
+router.route('/authenticate')
+    .post(authController.authenticateUser);
 
 // the routing begins
 // event stuff
 router.route('/events')
-    .get(eventController.findEvents)
+    .get(eventController.findAllEvents)
     .post(eventController.addEvent);
 
 router.route('/events/:event_id')
-    .get(eventController.findEventById)
-    .delete(eventController.deleteEvent);
+    .get(eventController.findEventById);
+    //.delete(eventController.deleteEvent);
+
+router.route('/events/add')
+    .post(eventController.addEvent);
+
+router.route('/events/:event_id/edit')
+    .put();
 
 // image stuff
 router.route('/images')

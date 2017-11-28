@@ -1,53 +1,66 @@
-// data models
-var Event = require('../models/event');
-var exports = module.exports = {};
 
-exports.findEvents = function (req, res) {
-    Event.find(function (err, events) {
-        if (err)
-            return res.json({success: false, message: err.message});
+const eventsLocation = 'https://s3.ca-central-1.amazonaws.com/cellarart/events.json';
+const axios = require('axios');
+const uuid = require('uuid/v4');
+const s3utils = require('../helpers/s3-utilities');
+let s3 = null;
 
-        if (events.length > 0)
-            return res.json(events);
-
-        return res.json({success: true, message: 'No events to return!'});
-    });
+const controller = {
+    init: function(config) {
+        s3 = new s3utils(config);
+    },
+    findEventById: function (req, res) {
+        axios.get(eventsLocation)
+            .then((response) => {                
+                return res.json(response.data.find(x => x.id === req.params.event_id));
+            })
+            .catch((errors) => { 
+                console.log(errors) 
+            });
+    },
+    findAllEvents: function (req, res) {
+        axios.get(eventsLocation)
+            .then((response) => { 
+                return res.json(response.data) 
+            })
+            .catch((errors) => { 
+                console.log(errors)
+            });
+    },
+    addEvent: function (req, res) {
+        axios.get(eventsLocation)
+            .then((response) => {
+                if (response.data) {
+                    req.body.id = uuid();
+                    response.data.push(req.body);
+                    s3.createObject({ key: 'events.json', body: JSON.stringify(response.data) }, function(isCreated) {
+                        return res.send(isCreated);
+                    });
+                } else {
+                    res.send('No events :(');
+                }
+            })
+            .catch((errors) => { 
+                console.log(errors);
+            });
+    },
+    editEvent: function (req, res) {
+        axios.get(eventsLocation)
+            .then((response) => {
+                if (response.data) {
+                    events = response.data.filter((v) => v.id !== req.params.event_id);
+                    events.push(req.body);
+                    s3.createObject({ key: 'events.json', body: JSON.stringify(events) }, function(isCreated) {
+                        return res.send(isCreated);
+                    });
+                } else {
+                    res.send('No events :(');
+                }
+            })
+            .catch((errors) => {
+                console.log(errors);
+            });
+    }
 };
 
-exports.findEventById = function (req, res) {
-    Event.findById(req.params.event_id, function (err, event) {
-        if (err)
-            return res.json({ 'success': false, 'message': err.message});
-
-        return res.json({ success: !err, event: event});
-    });
-};
-
-exports.addEvent = function (req, res) {
-    var event = new Event({
-        name: req.body.name,
-        location: req.body.location,
-        date: {
-            startDate: req.body.date.startDate,
-            endDate: req.body.date.endDate
-        },
-        url: req.body.url,
-        type: req.body.type
-    });
-
-    event.save(function (err) {
-        if (err)
-            return res.json({success: false, message: err.message});
-
-        return res.json({success: !err, event: event});
-    });
-};
-
-exports.deleteEvent = function (req, res) {
-    Event.findByIdAndRemove(req.params.event_id, function (err, event) {
-        if (err)
-            return res.json({ success: false, message: err.message});
-
-        return res.json({ success: !err });
-    });
-};
+module.exports = controller;

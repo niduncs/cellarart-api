@@ -30,7 +30,16 @@ S3Utilities.prototype.getObjects = function(callback) {
 };
 
 S3Utilities.prototype.createObject = function (data, callback) {
+    var params = {
+        Bucket: this.bucketName,
+        Key: data.key,
+        ACL: "public-read",
+        Body: data.body
+    };
 
+    this.s3.upload(params, function (err, data) {
+        callback(!err);
+    })
 };
 
 S3Utilities.prototype.deleteObject = function (key, callback) {
