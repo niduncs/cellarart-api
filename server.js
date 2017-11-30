@@ -67,16 +67,16 @@ router.use(function (req, res, next) {
         } else {
             next();
         }
-    } 
-
-    authController.authenticateToken(req.header('x-jwt-token'), (verified) => {
-        if (verified) {
-            next();
-        } else {
-            res.status(403);
-            return res.send('Invalid Request: Invalid auth token');
-        }
-    });
+    } else {
+        authController.authenticateToken(req.header('x-jwt-token'), (verified) => {
+            if (verified) {
+                next();
+            } else {
+                res.status(403);
+                return res.send('Invalid Request: Invalid auth token');
+            }
+        });
+    }  
 });
 
 router.route('/authenticate')

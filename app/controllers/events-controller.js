@@ -1,68 +1,47 @@
-
-const eventsLocation = 'https://s3.ca-central-1.amazonaws.com/cellarart/events.json';
-const axios = require('axios');
 const uuid = require('uuid/v4');
 const s3utils = require('../helpers/s3-utilities');
 let s3 = null;
 let dbConnection = null;
 
-const controller = {
-    init: function(config, db) {
+module.exports = {
+    init: (config, db) => {
         s3 = new s3utils(config);
         dbConnection = db;
     },
-    findEventById: function (req, res) {
-        axios.get(eventsLocation)
-            .then((response) => {                
-                return res.json(response.data.find(x => x.id === req.params.event_id));
-            })
-            .catch((errors) => { 
-                console.log(errors) 
-            });
+    findEventById: (req, res) => {
+        dbConnection('events').where({ id: req.params.event_id }).select('*').then((value) => { 
+            if (value[0]) {
+                return res.json(value[0]);
+            } else {
+                return res.send('No event found for ID: ' + req.params.event_id);
+            }
+        });
     },
-    findAllEvents: function (req, res) {
-        axios.get(eventsLocation)
-            .then((response) => { 
-                return res.json(response.data) 
-            })
-            .catch((errors) => { 
-                console.log(errors)
-            });
+    findAllEvents: (req, res) => {
+        dbConnection('events').select('*').then((value) => {
+            if (value.length > 0) {
+                return res.json(value);
+            } else {
+                return res.send('No events found.');
+            }
+        });
     },
-    addEvent: function (req, res) {
-        axios.get(eventsLocation)
-            .then((response) => {
-                if (response.data) {
-                    req.body.id = uuid();
-                    response.data.push(req.body);
-                    s3.createObject({ key: 'events.json', body: JSON.stringify(response.data) }, function(isCreated) {
-                        return res.send(isCreated);
-                    });
-                } else {
-                    res.send('No events :(');
-                }
-            })
-            .catch((errors) => { 
-                console.log(errors);
-            });
+    addEvent: (req, res) => {
+        dbConnection('events').insert(req.body).returning('*').then((value) => {
+            if (value[0]) {
+                return res.json(value[0]);
+            } else {
+                return res.send('Something went wrong, please try again');
+            }
+        });
     },
-    editEvent: function (req, res) {
-        axios.get(eventsLocation)
-            .then((response) => {
-                if (response.data) {
-                    events = response.data.filter((v) => v.id !== req.params.event_id);
-                    events.push(req.body);
-                    s3.createObject({ key: 'events.json', body: JSON.stringify(events) }, function(isCreated) {
-                        return res.send(isCreated);
-                    });
-                } else {
-                    res.send('No events :(');
-                }
-            })
-            .catch((errors) => {
-                console.log(errors);
-            });
+    editEvent: (req, res) => {
+        dbConnection('events').where({ id: req.params.event_id }).update(req.body).returning('*').then((value) => {
+            if (value[0]) {
+                return res.json(value[0]);
+            } else {
+                return res.send('Something went wrong, please try again')
+            }
+        });
     }
 };
-
-module.exports = controller;

@@ -3,48 +3,39 @@ const jwt = require('jsonwebtoken');
 let secretKey = null;
 let db = null;
 
-const controller = {
-    init: function(secret, dbConnection) {
+module.exports = {
+    init: (secret, dbConnection) => {
         secretKey = secret;
         db = dbConnection;
     },
-    authenticateUser: function(req, res) {
+    authenticateUser: (req, res) => {
         if (!req.body.name || !req.body.password) {
             return res.send('Name or password missing');
         }
+
+        let user = null;
     
-        User.findOne({ username: req.body.name, password: req.body.password }, '', function (err, user) {
-            if (user) {
-                jwt.sign(user._id, secretKey, { expiresIn: '10d' }, function(err, token) {
+        db('users').where({
+            name: req.body.name,
+            password: req.body.password
+        }).select('*').then((value) => {
+            if (value[0]) {
+                jwt.sign(value[0], secretKey, { expiresIn: '10d' }, (err, token) => {
                     if (!err) {
                         return res.json({ token: token });
                     }
-    
+                    console.log(err);
+        
                     return res.send('Error signing token.');
                 });
+            } else {
+                res.send('Unable to find user.');
             }
-    
-            return err ? res.send(err) : res.send('Invalid user.');
-        });
-
-        const user = {
-            name: req.body.name,
-            password: req.body.password
-        };
-
-        jwt.sign(user, secretKey, { expiresIn: '10d' }, function(err, token) {
-            if (!err) {
-                return res.json({ token: token });
-            }
-
-            return res.send('Error signing token.');
         });
     },
-    authenticateToken: function(token, callback) {
-        jwt.verify(token, secretKey, function(err, decoded) {
+    authenticateToken: (token, callback) => {
+        jwt.verify(token, secretKey, (err, decoded) => {
             callback(!err);
         });
     }
 }
-
-module.exports = controller;
