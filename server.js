@@ -9,16 +9,29 @@ const formData = require('express-form-data');
 // app setup
 const app = express();
 
-// DB setup
-var db = require('./app/db');
-db.connect(process.env.MONGODB_URI);
+// prevent the bad men from being bad
+app.disable('x-powered-by');
 
-const awsConfig = {
+// DB setup
+const db = require('knex')({
+    client: 'pg',
+    connection: {
+        host: process.env.DB_HOST,
+        user: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE,
+        port: process.env.DB_PORT,
+        charset: 'utf8'
+    }
+});
+
+const S3Utilities = require('./app/helpers/s3-utilities');
+const s3 = new S3Utilities({
     bucketName: process.env.AWS_BUCKET_NAME,
     key: process.env.AWS_KEY,
     secretKey: process.env.AWS_SECRET_KEY,
     s3Url: process.env.AWS_S3_URL
-};
+});
 
 // controllers
 const eventController = require('./app/controllers/events-controller');
@@ -26,9 +39,9 @@ const imagesController = require('./app/controllers/images-controller');
 const authController = require('./app/controllers/auth-controller');
 
 // we need to pass AWS stuff into the images controller
-imagesController.init(awsConfig);
-eventController.init(awsConfig);
-authController.init(process.env.SECRET_KEY);
+imagesController.init(s3, db);
+eventController.init(s3, db);
+authController.init(process.env.SECRET_KEY, db);
 
 // router setup
 const port = process.env.PORT || 8080;
@@ -44,9 +57,6 @@ app.use(formData.format());
 app.use(formData.stream());
 // union body and files
 app.use(formData.union());
-
-// prevent the bad men from being bad
-app.disable('x-powered-by');
 
 // routing middleware
 router.use(function (req, res, next) {

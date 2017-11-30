@@ -1,30 +1,31 @@
 const btoa = require('btoa');
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
 let secretKey = null;
+let db = null;
 
 const controller = {
-    init: function(secret) {
+    init: function(secret, dbConnection) {
         secretKey = secret;
+        db = dbConnection;
     },
     authenticateUser: function(req, res) {
         if (!req.body.name || !req.body.password) {
             return res.send('Name or password missing');
         }
     
-        // User.findOne({ username: req.body.name, password: req.body.password }, '', function (err, user) {
-        //     if (user) {
-        //         jwt.sign(user._id, secretKey, { expiresIn: '10d' }, function(err, token) {
-        //             if (!err) {
-        //                 return res.json({ token: token });
-        //             }
+        User.findOne({ username: req.body.name, password: req.body.password }, '', function (err, user) {
+            if (user) {
+                jwt.sign(user._id, secretKey, { expiresIn: '10d' }, function(err, token) {
+                    if (!err) {
+                        return res.json({ token: token });
+                    }
     
-        //             return res.send('Error signing token.');
-        //         });
-        //     }
+                    return res.send('Error signing token.');
+                });
+            }
     
-        //     return err ? res.send(err) : res.send('Invalid user.');
-        // });
+            return err ? res.send(err) : res.send('Invalid user.');
+        });
 
         const user = {
             name: req.body.name,
@@ -32,7 +33,6 @@ const controller = {
         };
 
         jwt.sign(user, secretKey, { expiresIn: '10d' }, function(err, token) {
-            console.log(err);
             if (!err) {
                 return res.json({ token: token });
             }

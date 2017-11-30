@@ -1,11 +1,13 @@
 const btoa = require('btoa');
 const moment = require('moment');
 const S3Utilities = require('../helpers/s3-utilities');
-var s3 = null;
+let s3 = null;
+let dbConnection = null;
 
 const controller = {
-    init: function (config) {
+    init: function (config, db) {
         s3 = new S3Utilities(config);
+        dbConnection = db;
     },
     getImages: function (req, res) {
         if (!s3) return res.send([]);
