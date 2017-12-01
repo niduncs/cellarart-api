@@ -85,18 +85,17 @@ router.route('/authenticate')
 // the routing begins
 // event stuff
 router.route('/events')
-    .get(eventController.findAllEvents)
-    .post(eventController.addEvent);
-
-router.route('/events/:event_id')
-    .get(eventController.findEventById);
-    //.delete(eventController.deleteEvent);
+    .get(eventController.findAllEvents);
 
 router.route('/events/add')
     .post(eventController.addEvent);
 
+router.route('/events/:event_id')
+    .get(eventController.findEventById)
+    .delete(eventController.deleteEvent);
+
 router.route('/events/:event_id/edit')
-    .put();
+    .put(eventController.editEvent);
 
 // image stuff
 router.route('/images')
