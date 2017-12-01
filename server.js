@@ -59,7 +59,7 @@ app.use(formData.stream());
 app.use(formData.union());
 
 // routing middleware
-router.use(function (req, res, next) {
+router.use((req, res, next) => {
     if (!req.header('x-jwt-token')) {
         if (req.path !== '/authenticate') {
             res.status(403);

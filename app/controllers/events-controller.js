@@ -1,15 +1,15 @@
 const uuid = require('uuid/v4');
 const s3utils = require('../helpers/s3-utilities');
 let s3 = null;
-let dbConnection = null;
+let db = null;
 
 module.exports = {
-    init: (config, db) => {
+    init: (config, dbConnection) => {
         s3 = new s3utils(config);
-        dbConnection = db;
+        db = dbConnection;
     },
     findEventById: (req, res) => {
-        dbConnection('events').where({ id: req.params.event_id }).select('*').then((value) => { 
+        db('events').where({ id: req.params.event_id }).select('*').then((value) => { 
             if (value[0]) {
                 return res.json(value[0]);
             } else {
@@ -18,7 +18,7 @@ module.exports = {
         });
     },
     findAllEvents: (req, res) => {
-        dbConnection('events').select('*').then((value) => {
+        db('events').select('*').then((value) => {
             if (value.length > 0) {
                 return res.json(value);
             } else {
@@ -27,7 +27,7 @@ module.exports = {
         });
     },
     addEvent: (req, res) => {
-        dbConnection('events').insert(req.body).returning('*').then((value) => {
+        db('events').insert(req.body).returning('*').then((value) => {
             if (value[0]) {
                 return res.json(value[0]);
             } else {
@@ -36,7 +36,7 @@ module.exports = {
         });
     },
     editEvent: (req, res) => {
-        dbConnection('events').where({ id: req.params.event_id }).update(req.body).returning('*').then((value) => {
+        db('events').where({ id: req.params.event_id }).update(req.body).returning('*').then((value) => {
             if (value[0]) {
                 return res.json(value[0]);
             } else {
