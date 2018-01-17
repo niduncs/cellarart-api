@@ -1,8 +1,5 @@
 const btoa = require('btoa');
 const jwt = require('jsonwebtoken');
-let secretKey = null;
-let db = null;
-
 
 function AuthController(secret, db) {
     this.secret = secret;

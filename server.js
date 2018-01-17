@@ -1,18 +1,12 @@
-// read .env variables for dev
 require('dotenv').config();
 
-// external libraries
 const express = require('express');
 const bodyParser = require('body-parser');
 const formData = require('express-form-data');
 
-// app setup
 const app = express();
-
-// prevent the bad men from being bad
 app.disable('x-powered-by');
 
-// DB setup
 const db = require('knex')({
     client: 'pg',
     connection: {
@@ -33,32 +27,25 @@ const s3 = new S3Utilities({
     s3Url: process.env.AWS_S3_URL
 });
 
-// controllers
 const EventsController = require('./app/controllers/events-controller');
 const ImagesController = require('./app/controllers/images-controller');
 const AuthController = require('./app/controllers/auth-controller');
-
-// we need to pass AWS stuff into the images controller
-imagesController.init(s3, db);
+const imagesController = new ImagesController(s3, db);
 const eventsContoller = new EventsController(db);
 const authController = new AuthController(process.env.SECRET_KEY, db);
 
-// router setup
-const port = process.env.PORT || 8080;
 var router = express.Router();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-// parsing data with connect-multiparty.
+
+// file manipulation
 app.use(formData.parse());
-// clear all empty files (size == 0)
 app.use(formData.format());
-// change file objects to node stream.Readable
 app.use(formData.stream());
-// union body and files
 app.use(formData.union());
 
-// routing middleware
+// authentication "middleware"
 router.use((req, res, next) => {
     if (!req.header('x-jwt-token')) {
         if (req.path !== '/authenticate') {
@@ -82,8 +69,6 @@ router.use((req, res, next) => {
 router.route('/authenticate')
     .post(authController.authenticateUser);
 
-// the routing begins
-// event stuff
 router.route('/events')
     .get(eventController.findAllEvents);
 
@@ -97,14 +82,10 @@ router.route('/events/:event_id')
 router.route('/events/:event_id/edit')
     .put(eventController.editEvent);
 
-// image stuff
 router.route('/images')
     .get(imagesController.getImages)
     .delete(imagesController.deleteImages)
     .post(imagesController.addImage);
 
-// route everything through `/api` 'cause I'm cool
 app.use('/api', router);
-
-// listen on 8080
-app.listen(port);
+app.listen(process.env.PORT || 8080);
