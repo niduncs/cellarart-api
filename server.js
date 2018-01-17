@@ -34,14 +34,14 @@ const s3 = new S3Utilities({
 });
 
 // controllers
-const eventController = require('./app/controllers/events-controller');
-const imagesController = require('./app/controllers/images-controller');
-const authController = require('./app/controllers/auth-controller');
+const EventsController = require('./app/controllers/events-controller');
+const ImagesController = require('./app/controllers/images-controller');
+const AuthController = require('./app/controllers/auth-controller');
 
 // we need to pass AWS stuff into the images controller
 imagesController.init(s3, db);
-eventController.init(s3, db);
-authController.init(process.env.SECRET_KEY, db);
+const eventsContoller = new EventsController(db);
+const authController = new AuthController(process.env.SECRET_KEY, db);
 
 // router setup
 const port = process.env.PORT || 8080;
