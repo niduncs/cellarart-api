@@ -13,28 +13,35 @@ AuthController.prototype.authenticateUser = function(req, res) {
 
     let user = null;
 
-    this.db('users').where({
-        name: req.body.name,
-        password: req.body.password
-    }).select('*').then((value) => {
-        if (value[0]) {
-            jwt.sign(value[0], this.secret, { expiresIn: '10d' }, (err, token) => {
-                if (!err) {
-                    return res.json({ token: token });
-                }
-    
-                return res.send('Error signing token.');
-            });
-        } else {
-            res.send('Unable to find user.');
-        }
-    });
+    this.db('users')
+        .where({
+            name: req.body.name,
+            password: req.body.password
+        })
+        .select('*')
+        .then((value) => {
+            if (value[0]) {
+                jwt.sign(value[0], this.secret, { expiresIn: '10d' }, (err, token) => {
+                    if (!err) {
+                        return res.json({ token: token });
+                    }
+        
+                    return res.send('Error signing token.');
+                });
+            } else {
+                return res.send('Unable to find user.');
+            }
+        });
 };
 
 AuthController.prototype.authenticateToken = function (req, res) {
-    jwt.verify(token, this.secret, (err, decoded) => {
-        callback(!err);
+    return new Promise((resolve, reject) => {
+        jwt.verify(token, this.secret, (err, decoded) => {
+            if(err) reject(err);
+            resolve(decoded);
+        });
     });
+    
 };
 
 

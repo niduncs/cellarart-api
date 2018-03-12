@@ -55,14 +55,14 @@ router.use((req, res, next) => {
             next();
         }
     } else {
-        authController.authenticateToken(req.header('x-jwt-token'), (verified) => {
-            if (verified) {
+        authController.authenticateToken(req.header('x-jwt-token'))
+            .then((decoded) => {
                 next();
-            } else {
+            })    
+            .catch((err) => {
                 res.status(403);
                 return res.send('Invalid Request: Invalid auth token');
-            }
-        });
+            });
     }  
 });
 
