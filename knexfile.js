@@ -2,31 +2,27 @@
 require('dotenv').config();
 
 module.exports = {
-
   development: {
-    client: 'postgresql',
-    connection: {
-      host: process.env.DB_HOST,
-      user: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
-      port: process.env.DB_PORT,
-      charset: 'utf8'
-    },
+    client: 'pg',
+    connection: process.env.DATABASE_URL,
+    migrations: {
+      tableName: 'knex_migrations'
+    }
+  },
+
+  test: {
+    client: 'pg',
+    connection: process.env.DATABASE_URL,
     migrations: {
       tableName: 'knex_migrations'
     }
   },
 
   production: {
-    client: 'postgresql',
-    connection: {
-      host: process.env.DB_HOST,
-      user: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
-      port: process.env.DB_PORT,
-      charset: 'utf8'
+    client: 'pg',
+    connection: process.env.DATABASE_URL,
+    migrations: {
+      tableName: 'knex_migrations'
     },
     pool: {
       min: 2,
@@ -36,5 +32,4 @@ module.exports = {
       tableName: 'knex_migrations'
     }
   }
-
 };

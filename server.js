@@ -8,23 +8,16 @@ const app = express();
 app.disable('x-powered-by');
 
 const db = require('knex')({
-    client: 'pg',
-    connection: {
-        host: process.env.DB_HOST,
-        user: process.env.DB_USERNAME,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_DATABASE,
-        port: process.env.DB_PORT,
-        charset: 'utf8'
-    }
+  client: 'pg',
+  connection: process.env.DATABASE_URL
 });
 
 const S3Utilities = require('./app/helpers/s3-utilities');
 const s3 = new S3Utilities({
-    bucketName: process.env.AWS_BUCKET_NAME,
-    key: process.env.AWS_KEY,
-    secretKey: process.env.AWS_SECRET_KEY,
-    s3Url: process.env.AWS_S3_URL
+  bucketName: process.env.AWS_BUCKET_NAME,
+  key: process.env.AWS_KEY,
+  secretKey: process.env.AWS_SECRET_KEY,
+  s3Url: process.env.AWS_S3_URL
 });
 
 const EventsController = require('./app/controllers/events-controller');
@@ -47,45 +40,44 @@ app.use(formData.union());
 
 // authentication "middleware"
 router.use((req, res, next) => {
-    if (!req.header('x-jwt-token')) {
-        if (req.path !== '/authenticate') {
-            res.status(403);
-            return res.send('Invalid Request: Missing auth token.');
-        } else {
-            next();
-        }
+  if (!req.header('x-jwt-token')) {
+    if (req.path !== '/authenticate') {
+      res.status(403);
+      return res.send('Invalid Request: Missing auth token.');
     } else {
-        authController.authenticateToken(req.header('x-jwt-token'))
-            .then((decoded) => {
-                next();
-            })    
-            .catch((err) => {
-                res.status(403);
-                return res.send('Invalid Request: Invalid auth token');
-            });
-    }  
+      next();
+    }
+  } else {
+    authController
+      .authenticateToken(req.header('x-jwt-token'))
+      .then(decoded => {
+        next();
+      })
+      .catch(err => {
+        res.status(403);
+        return res.send('Invalid Request: Invalid auth token');
+      });
+  }
 });
 
-router.route('/authenticate')
-    .post(authController.authenticateUser);
+router.route('/authenticate').post(authController.authenticateUser);
 
-router.route('/events')
-    .get(eventController.findAllEvents);
+router.route('/events').get(eventController.findAllEvents);
 
-router.route('/events/add')
-    .post(eventController.addEvent);
+router.route('/events/add').post(eventController.addEvent);
 
-router.route('/events/:event_id')
-    .get(eventController.findEventById)
-    .delete(eventController.deleteEvent);
+router
+  .route('/events/:event_id')
+  .get(eventController.findEventById)
+  .delete(eventController.deleteEvent);
 
-router.route('/events/:event_id/edit')
-    .put(eventController.editEvent);
+router.route('/events/:event_id/edit').put(eventController.editEvent);
 
-router.route('/images')
-    .get(imagesController.getImages)
-    .delete(imagesController.deleteImages)
-    .post(imagesController.addImage);
+router
+  .route('/images')
+  .get(imagesController.getImages)
+  .delete(imagesController.deleteImages)
+  .post(imagesController.addImage);
 
 app.use('/api', router);
 app.listen(process.env.PORT || 8080);
